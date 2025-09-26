@@ -6,6 +6,9 @@ WORKDIR /app
 COPY *.csproj ./
 RUN dotnet restore
 
+# Copiar carpeta Recursos
+COPY Recursos ./Recursos
+
 # Copiar todo el código y compilar
 COPY . ./
 RUN dotnet publish -c Release -o out
