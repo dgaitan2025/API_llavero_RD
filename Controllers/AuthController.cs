@@ -55,7 +55,7 @@ public class AuthController : ControllerBase
             RolId = u.RolId,
             EstaActivo = u.EstaActivo,
             Token = token,
-            Fotografia2 = u.Fotografia2 != null ? u.Fotografia2Mime + Convert.ToBase64String(u.Fotografia2) : null
+            Fotografia2 = u.Fotografia2 != null ? $"data:{u.Fotografia2Mime};base64,{Convert.ToBase64String(u.Fotografia2)}" : null
         });
     }
 
