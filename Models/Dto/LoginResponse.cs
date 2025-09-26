@@ -2,6 +2,8 @@ namespace ProyDesaWeb2025.Models.Dto;
 
 public class LoginResponse
 {
+	public bool success { get; set; }
+	public string? message { get; set; }
     public ulong UsuarioId { get; set; }
     public string Email { get; set; } = string.Empty;
     public string? Telefono { get; set; }
@@ -11,4 +13,5 @@ public class LoginResponse
     public byte RolId { get; set; }
     public bool EstaActivo { get; set; }
     public string? Token { get; set; } // JWT
+	
 }
