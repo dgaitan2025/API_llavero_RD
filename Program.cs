@@ -60,7 +60,8 @@ builder.Services.AddCors(options =>
         {
             policy.WithOrigins(
                     "http://localhost:3000",
-                    "https://llaverostec.onrender.com"
+                    "https://llaverostec.onrender.com",
+					"https://tecllaveros.onrender.com/"
                 )
                 .AllowAnyHeader()
                 .AllowAnyMethod();
@@ -78,12 +79,18 @@ if (app.Environment.IsDevelopment())
 }
 
 // Servir archivos estáticos desde "Recursos" en la raíz del proyecto
+var recursosPath = Path.Combine(builder.Environment.ContentRootPath, "Recursos");
+if (!Directory.Exists(recursosPath))
+{
+    Directory.CreateDirectory(recursosPath); // evita el DirectoryNotFoundException
+}
+
 app.UseStaticFiles(new StaticFileOptions
 {
-    FileProvider = new PhysicalFileProvider(
-        Path.Combine(builder.Environment.ContentRootPath, "Recursos")),
+    FileProvider = new PhysicalFileProvider(recursosPath),
     RequestPath = "/Recursos/PDFS"
 });
+
 
 app.UseHttpsRedirection();
 
