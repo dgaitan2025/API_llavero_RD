@@ -38,11 +38,12 @@ public class AuthController : ControllerBase
         UsuarioCredencial? u = await _repo.ObtenerPorCredencialAsync(body.Identificador.Trim());
 
         if (u is null || !u.EstaActivo)
-            return Unauthorized("Credenciales inválidas.");
+			return Unauthorized(new { success = false, message = "Usuario no existe." });
 
         // Verificación simple: BCrypt ($2a/$2b$) y (opcional) Argon2id si agregas el paquete.
         var ok = PasswordHasher.Verify(body.Password, u.PasswordHash);
-        if (!ok) return Unauthorized("Credenciales inválidas.");
+        if (!ok)
+			return Unauthorized(new { success = false, message = "Credenciales inválidas." });
 
         var token = _jwt.CreateToken(u);
         return Ok(new LoginResponse
