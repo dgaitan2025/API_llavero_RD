@@ -34,8 +34,8 @@ public class UsuariosController : ControllerBase
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     [HttpPost]
-    [Consumes("multipart/form-data")]
-    public async Task<IActionResult> Crear([FromForm] UsuarioCreateForm form)
+    
+    public async Task<IActionResult> Crear([FromBody] UsuarioCreateForm form)
     {
         // Hashear el password plano
         var passwordPHC = BCrypt.Net.BCrypt.HashPassword(form.PasswordPlano, workFactor: 12);
