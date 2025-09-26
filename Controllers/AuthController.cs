@@ -48,6 +48,7 @@ public class AuthController : ControllerBase
         var token = _jwt.CreateToken(u);
         return Ok(new LoginResponse
         {
+			success = true,
             Email = u.Email,
             Telefono = u.Telefono,
             Nickname = u.Nickname,
