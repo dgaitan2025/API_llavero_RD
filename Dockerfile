@@ -6,7 +6,7 @@ WORKDIR /app
 RUN apt-get update && apt-get install -y \
     fontconfig \
     libfreetype6 \
-    && apt-get install -y ttf-mscorefonts-installer \
+    fonts-liberation \
     && fc-cache -fv
 
 # Copiar archivos de proyecto
@@ -28,7 +28,7 @@ WORKDIR /app
 RUN apt-get update && apt-get install -y \
     fontconfig \
     libfreetype6 \
-    && apt-get install -y ttf-mscorefonts-installer \
+    fonts-liberation \
     && fc-cache -fv
 
 COPY --from=build /app/out .
