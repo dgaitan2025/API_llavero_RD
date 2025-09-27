@@ -2,8 +2,7 @@
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 WORKDIR /app
 
-#instala fuentes para generar pdf
-
+# Instala fuentes necesarias en build
 RUN apt-get update && apt-get install -y \
     fontconfig \
     libfreetype6 \
@@ -24,6 +23,14 @@ RUN dotnet publish -c Release -o out
 # Etapa 2: Runtime
 FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS runtime
 WORKDIR /app
+
+# Instala fuentes también en runtime
+RUN apt-get update && apt-get install -y \
+    fontconfig \
+    libfreetype6 \
+    && apt-get install -y ttf-mscorefonts-installer \
+    && fc-cache -fv
+
 COPY --from=build /app/out .
 
 # Exponer puerto (Render usa el PORT de env variable)
