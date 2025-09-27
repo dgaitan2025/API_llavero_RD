@@ -8,22 +8,24 @@ namespace ProyDesaWeb2025.Funciones
         private readonly EnvioCorreo _emailService;
         private readonly TwilioMsg _twilio;
         private readonly CarnetGenerador _carnetGen;
-        private readonly IConfiguration cfg = new ConfigurationBuilder()
-            .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
-            .AddEnvironmentVariables()
-            .Build();
-        private readonly string _baseUrl;
 
+        private readonly IConfiguration _cfg;
+        private readonly string _baseUrl;
         public EnvioMensajes(
-            EnvioCorreo emailService,
-            TwilioMsg twilio,
-            CarnetGenerador carnetGen)
+    EnvioCorreo emailService,
+    TwilioMsg twilio,
+    CarnetGenerador carnetGen,
+    IConfiguration cfg)   // ⬅️ inyectado desde Program.cs
         {
             _emailService = emailService;
             _twilio = twilio;
             _carnetGen = carnetGen;
-            _baseUrl = cfg["AppBaseUrl"] ?? "";
+            _cfg = cfg;
+            _baseUrl = _cfg["AppBaseUrl"] ?? "";
         }
+        
+
+        
 
         /// <summary>
         /// Genera el carnet PDF y lo envía por correo y WhatsApp.

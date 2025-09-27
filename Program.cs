@@ -4,6 +4,11 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using ProyDesaWeb2025.Repositories;
 using ProyDesaWeb2025.Security;
+using Api_Empleados.Funciones;
+using ProyDesaWeb2025.Funciones;
+
+
+
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -11,6 +16,11 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+
+builder.Services.AddScoped<EnvioCorreo>();
+builder.Services.AddScoped<TwilioMsg>();
+builder.Services.AddScoped<CarnetGenerador>();
+builder.Services.AddScoped<EnvioMensajes>(); // 👈 Aquí ya puedes inyectar IConfiguration
 
 // Inyectar repos directamente
 builder.Services.AddScoped<UsuariosRepository>();
@@ -106,7 +116,7 @@ app.UseStaticFiles(new StaticFileOptions
 app.UseHttpsRedirection();
 
 // Usar CORS
-app.UseCors("ANY");
+app.UseCors("AllowVueClient");
 
 // ===== Orden correcto para auth =====
 app.UseAuthentication();

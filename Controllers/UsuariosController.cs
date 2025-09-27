@@ -65,18 +65,25 @@ public class UsuariosController : ControllerBase
         if (codigo != 0)
             return StatusCode(codigo, new { codigo, mensaje });
 
-        //Llamamos all envío de mensajes (email y whatsapp)
-        var twilio = new TwilioMsg(_cfg, _env);
-        var envio = new EnvioMensajes(new EnvioCorreo(), twilio, new CarnetGenerador());
+        try
+        {
+            // Llamamos al envío de mensajes (email y whatsapp)
+            var twilio = new TwilioMsg(_cfg, _env);
+            var envio = new EnvioMensajes(new EnvioCorreo(), twilio, new CarnetGenerador(), _cfg);
 
-        await envio.EnviarTodoAsync(
-            correo: form.Email,
-            nombre: form.Nickname,
-            nickname: form.Nickname,
-            telefono: form.Telefono,
-            contentSid: _cfg["Twilio:WhatsAppTemplateSid"]
-        );
-        
+            await envio.EnviarTodoAsync(
+                correo: form.Email,
+                nombre: form.Nickname,
+                nickname: form.Nickname,
+                telefono: form.Telefono,
+                contentSid: _cfg["Twilio:WhatsAppTemplateSid"]
+            );
+        }
+        catch (Exception ex)
+        {
+            // 👇 Esto asegura que siempre tengas headers CORS
+            return StatusCode(500, new { mensaje = "Usuario registradi, Error en envío de mensajes", detalle = ex.Message });
+        }
 
         return CreatedAtAction(nameof(GetById), new { id = usuarioId }, new { usuarioId, mensaje = "OK" });
     }
