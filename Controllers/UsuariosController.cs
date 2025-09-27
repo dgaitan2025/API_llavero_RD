@@ -60,7 +60,7 @@ public class UsuariosController : ControllerBase
             foto2: foto2, foto2Mime: form.Fotografia2Mime,
             rolId: form.RolId
         );
-        /*
+        
 
         if (codigo != 0)
             return StatusCode(codigo, new { codigo, mensaje });
@@ -76,7 +76,7 @@ public class UsuariosController : ControllerBase
             telefono: form.Telefono,
             contentSid: _cfg["Twilio:WhatsAppTemplateSid"]
         );
-        */
+        
 
         return CreatedAtAction(nameof(GetById), new { id = usuarioId }, new { usuarioId, mensaje = "OK" });
     }
