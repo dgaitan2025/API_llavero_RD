@@ -23,4 +23,8 @@
     <Folder Include="Recursos\PDFS\" />
   </ItemGroup>
 
+	<ItemGroup>
+		<Content Include="Recursos\**\*.*" CopyToOutputDirectory="Always" />
+	</ItemGroup>
+
 </Project>
