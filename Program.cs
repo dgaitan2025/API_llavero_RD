@@ -52,6 +52,17 @@ builder.Services
 builder.Services.AddAuthorization();
 // ==============================================
 
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("ANY",
+        policy =>
+        {
+            policy.AllowAnyOrigin()
+                  .AllowAnyHeader()
+                  .AllowAnyMethod();
+        });
+});
+
 // Configurar CORS
 builder.Services.AddCors(options =>
 {
@@ -61,7 +72,7 @@ builder.Services.AddCors(options =>
             policy.WithOrigins(
                     "http://localhost:3000",
                     "https://llaverostec.onrender.com",
-					"https://tecllaveros.onrender.com/"
+					"https://tecllaveros.onrender.com"
                 )
                 .AllowAnyHeader()
                 .AllowAnyMethod();
@@ -95,7 +106,7 @@ app.UseStaticFiles(new StaticFileOptions
 app.UseHttpsRedirection();
 
 // Usar CORS
-app.UseCors("AllowVueClient");
+app.UseCors("ANY");
 
 // ===== Orden correcto para auth =====
 app.UseAuthentication();
