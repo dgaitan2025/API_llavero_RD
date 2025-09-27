@@ -2,6 +2,14 @@
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 WORKDIR /app
 
+#instala fuentes para generar pdf
+
+RUN apt-get update && apt-get install -y \
+    fontconfig \
+    libfreetype6 \
+    && apt-get install -y ttf-mscorefonts-installer \
+    && fc-cache -fv
+
 # Copiar archivos de proyecto
 COPY *.csproj ./
 RUN dotnet restore
