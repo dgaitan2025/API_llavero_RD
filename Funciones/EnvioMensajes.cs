@@ -54,7 +54,7 @@ namespace ProyDesaWeb2025.Funciones
             await File.WriteAllBytesAsync(fullPath, pdf);
 
             /* ─────────── Enviar correo ─────────── */
-            await _emailService.EnviarCorreoConPDF(correo, nombre, pdf);
+           // await _emailService.EnviarCorreoConPDF(correo, nombre, pdf);
             string pdfUrl = $"{_baseUrl}/Recursos/PDFS/{fileName}";
 
             /* ─────────── Enviar WhatsApp ─────────── */
