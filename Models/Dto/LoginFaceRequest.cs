@@ -6,5 +6,5 @@ public class LoginFaceRequest
     public string Identificador { get; set; } = string.Empty;
 
     /// <summary>Foto del rostro (imagen)</summary>
-    public IFormFile Foto { get; set; } = default!;
+    public string Foto { get; set; } 
 }

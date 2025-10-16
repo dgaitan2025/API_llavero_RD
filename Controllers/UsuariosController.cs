@@ -1,6 +1,8 @@
 using Api_Empleados.Funciones;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using ProyDesaWeb2025.Funciones;
+using ProyDesaWeb2025.ModelosBP;
 using ProyDesaWeb2025.Models;
 using ProyDesaWeb2025.Repositories;
 
@@ -13,13 +15,15 @@ public class UsuariosController : ControllerBase
     private readonly UsuariosRepository _repo;
     private readonly IConfiguration _cfg;
     private readonly IWebHostEnvironment _env;
+    private readonly DBDesWeb _context;
     //public UsuariosController(UsuariosRepository repo) => _repo = repo;  Esto lo descomentaremos cuando mejoremos lo de Twilio
 
-    public UsuariosController(UsuariosRepository repo, IConfiguration cfg, IWebHostEnvironment env)
+    public UsuariosController(UsuariosRepository repo, IConfiguration cfg, IWebHostEnvironment env, DBDesWeb context)
     {
         _repo = repo;
         _cfg = cfg;
         _env = env;
+        _context = context;
     }
 
     /// <summary>
@@ -34,7 +38,7 @@ public class UsuariosController : ControllerBase
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     [HttpPost]
-    
+
     public async Task<IActionResult> Crear([FromBody] UsuarioCreateForm form)
     {
         // Hashear el password plano
@@ -60,7 +64,6 @@ public class UsuariosController : ControllerBase
             foto2: foto2, foto2Mime: form.Fotografia2Mime,
             rolId: form.RolId
         );
-        
 
         if (codigo != 0)
             return StatusCode(codigo, new { codigo, mensaje });
@@ -69,7 +72,7 @@ public class UsuariosController : ControllerBase
         {
             // Llamamos al envío de mensajes (email y whatsapp)
             var twilio = new TwilioMsg(_cfg, _env);
-            var envio = new EnvioMensajes(new EnvioCorreo(), twilio, new CarnetGenerador(), _cfg);
+            var envio = new EnvioMensajes(new EnvioCorreo(), twilio, new CarnetGenerador());
 
             await envio.EnviarTodoAsync(
                 correo: form.Email,
@@ -82,10 +85,26 @@ public class UsuariosController : ControllerBase
         catch (Exception ex)
         {
             // 👇 Esto asegura que siempre tengas headers CORS
-            return StatusCode(500, new { mensaje = "Usuario registradi, Error en envío de mensajes", detalle = ex.Message });
+            return StatusCode(500, new { mensaje = "Usuario registrado, Error en envío de mensajes", detalle = ex.Message });
         }
+    
+        usuario usuarioLocal = new usuario
+        {
+            email = form.Email,
+            Telefono = form.Telefono,            
+            nickname = form.Nickname,
+            PasswordHash = passwordPHC,
+            Fotografia = foto,
+            FotografiaMime = form.FotografiaMime,
+            Fotografia2 = foto2,
+            Fotografia2Mime = form.Fotografia2Mime,            
+            RolId = form.RolId,
+            EstaActivo = true
+        };
+        _context.usuarios.Add(usuarioLocal);
+        await _context.SaveChangesAsync();
 
-        return CreatedAtAction(nameof(GetById), new { id = usuarioId }, new { usuarioId, mensaje = "OK" });
+        return CreatedAtAction(nameof(GetById), new { id = usuarioLocal.UsuarioId }, new { usuarioLocal.UsuarioId, mensaje = "OK" });
     }
 
     /// <summary>

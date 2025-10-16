@@ -8,24 +8,22 @@ namespace ProyDesaWeb2025.Funciones
         private readonly EnvioCorreo _emailService;
         private readonly TwilioMsg _twilio;
         private readonly CarnetGenerador _carnetGen;
-
-        private readonly IConfiguration _cfg;
+        private readonly IConfiguration cfg = new ConfigurationBuilder()
+            .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
+            .AddEnvironmentVariables()
+            .Build();
         private readonly string _baseUrl;
+
         public EnvioMensajes(
-    EnvioCorreo emailService,
-    TwilioMsg twilio,
-    CarnetGenerador carnetGen,
-    IConfiguration cfg)   // ⬅️ inyectado desde Program.cs
+            EnvioCorreo emailService,
+            TwilioMsg twilio,
+            CarnetGenerador carnetGen)
         {
             _emailService = emailService;
             _twilio = twilio;
             _carnetGen = carnetGen;
-            _cfg = cfg;
-            _baseUrl = _cfg["AppBaseUrl"] ?? "";
+            _baseUrl = cfg["AppBaseUrl"] ?? "";
         }
-        
-
-        
 
         /// <summary>
         /// Genera el carnet PDF y lo envía por correo y WhatsApp.
@@ -54,7 +52,7 @@ namespace ProyDesaWeb2025.Funciones
             await File.WriteAllBytesAsync(fullPath, pdf);
 
             /* ─────────── Enviar correo ─────────── */
-           // await _emailService.EnviarCorreoConPDF(correo, nombre, pdf);
+            await _emailService.EnviarCorreoConPDF(correo, nombre, pdf);
             string pdfUrl = $"{_baseUrl}/Recursos/PDFS/{fileName}";
 
             /* ─────────── Enviar WhatsApp ─────────── */

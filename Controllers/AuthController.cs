@@ -1,8 +1,12 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using ProyDesaWeb2025.Funciones;
+using ProyDesaWeb2025.ModelosBP;
 using ProyDesaWeb2025.Models;
 using ProyDesaWeb2025.Models.Dto;
 using ProyDesaWeb2025.Repositories;
 using ProyDesaWeb2025.Security;
+using System.Diagnostics;
 
 namespace ProyDesaWeb2025.Controllers;
 
@@ -13,12 +17,14 @@ public class AuthController : ControllerBase
     private readonly UsuariosRepository _repo;
     private readonly IConfiguration _cfg;
     private readonly JwtTokenService _jwt;
+    private readonly DBDesWeb _context;
 
-    public AuthController(UsuariosRepository repo, IConfiguration cfg, JwtTokenService jwt)
+    public AuthController(UsuariosRepository repo, IConfiguration cfg, JwtTokenService jwt, DBDesWeb context)
     {
         _repo = repo;
         _cfg = cfg;
         _jwt = jwt;
+        _context = context;
     }
 
     /// <summary>
@@ -38,24 +44,51 @@ public class AuthController : ControllerBase
         UsuarioCredencial? u = await _repo.ObtenerPorCredencialAsync(body.Identificador.Trim());
 
         if (u is null || !u.EstaActivo)
-			return Unauthorized(new { success = false, message = "Usuario no existe." });
+            return Unauthorized(new { success = false, message = "Usuario no existe." });
 
         // Verificación simple: BCrypt ($2a/$2b$) y (opcional) Argon2id si agregas el paquete.
         var ok = PasswordHasher.Verify(body.Password, u.PasswordHash);
         if (!ok)
-			return Unauthorized(new { success = false, message = "Credenciales inválidas." });
+            return Unauthorized(new { success = false, message = "Credenciales inválidas." });
+        // verificamos que exista en nuestra base de datos
+        
+
+        var usuario = await _context.usuarios.FirstOrDefaultAsync(x => x.email == u.Email || x.Telefono == u.Telefono);
+        usuario usuarioLocal;
+        if (usuario == null)
+        {
+            // Si no existe, lo agregamos
+            usuarioLocal = new usuario
+            {
+                email = u.Email,
+                Telefono = u.Telefono,                
+                nickname = u.Nickname,
+                PasswordHash = u.PasswordHash,
+                RolId = u.RolId,
+                EstaActivo = u.EstaActivo,
+                Fotografia2 = u.Fotografia2,
+                Fotografia2Mime = u.Fotografia2Mime
+            };
+            _context.usuarios.Add(usuarioLocal);
+            await _context.SaveChangesAsync();
+        }
+        else
+        {
+            usuarioLocal = usuario;
+        }
+
 
         var token = _jwt.CreateToken(u);
         return Ok(new LoginResponse
         {
-			success = true,
-            Email = u.Email,
-            Telefono = u.Telefono,
-            Nickname = u.Nickname,
-            RolId = u.RolId,
-            EstaActivo = u.EstaActivo,
+            UsuarioId = usuarioLocal.UsuarioId,
+            Email = usuarioLocal.email,
+            Telefono = usuarioLocal.Telefono,
+            Nickname = usuarioLocal.nickname,
+            RolId = usuarioLocal.RolId,
+            EstaActivo = true,
             Token = token,
-            Fotografia2 = u.Fotografia2 != null ? $"data:{u.Fotografia2Mime};base64,{Convert.ToBase64String(u.Fotografia2)}" : null
+            Fotografia2 = usuarioLocal.Fotografia2 != null ? $"data:{usuarioLocal.Fotografia2Mime};base64,{Convert.ToBase64String(usuarioLocal.Fotografia2)}" : null
         });
     }
 
@@ -71,26 +104,21 @@ public class AuthController : ControllerBase
     /// Si ocurre un error al obtener las fotos, retorna el código y mensaje correspondiente.
     /// </returns>
     [HttpPost("login-face")]
-    [Consumes("multipart/form-data")]
     [ProducesResponseType(typeof(LoginResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    public async Task<ActionResult<LoginResponse>> LoginFace([FromForm] LoginFaceRequest form)
+    public async Task<IActionResult> LoginFace([FromBody] LoginFaceRequest form, [FromServices] FaceApiClient _face)
     {
         if (form is null || string.IsNullOrWhiteSpace(form.Identificador) || form.Foto is null || form.Foto.Length == 0)
             return BadRequest("Debe enviar 'identificador' y una 'foto' válida.");
 
         var u = await _repo.ObtenerPorCredencialAsync(form.Identificador.Trim());
         if (u is null || !u.EstaActivo)
-            return Unauthorized("Credenciales inválidas o usuario inactivo.");
+            return Unauthorized(new { success = false, message = "No coincide rostro" });
 
         // Leer la foto subida a byte[]
-        byte[] fotoCliente;
-        using (var ms = new MemoryStream())
-        {
-            await form.Foto.CopyToAsync(ms);
-            fotoCliente = ms.ToArray();
-        }
+        
+        
 
         // Obtener fotos registradas en BD
         var (fotos, codigo, mensaje) = await _repo.ObtenerFotosAsync(u.UsuarioId);
@@ -100,24 +128,53 @@ public class AuthController : ControllerBase
         if (fotos is null || (fotos.Fotografia is null && fotos.Fotografia2 is null))
             return Unauthorized("No hay fotos registradas para validar el rostro.");
 
+
+
         // TODO: Aquí tu se implementará la comparación con la API/ de reconocimiento facial.
-        // bool match = await _face.CompareAsync(fotoCliente, fotos.Fotografia ?? fotos.Fotografia2);
-        bool match = false; // Por defecto, no permitir acceso hasta que se implemente.
+        // Comparar con la API
+        var match = await _face.CompareAsync(fotos.Fotografia , form.Foto);
+
 
         if (!match)
-            return Unauthorized("Rostro no reconocido.");
+            return Unauthorized("Rostro no reconocido o base64 invalido para su analisis.");
+
+
+        var usuario = await _context.usuarios.FirstOrDefaultAsync(x => x.email == u.Email || x.Telefono == u.Telefono);
+        usuario usuarioLocal;
+        if (usuario == null)
+        {
+            // Si no existe, lo agregamos
+            usuarioLocal = new usuario
+            {
+                email = u.Email,
+                Telefono = u.Telefono,
+                nickname = u.Nickname,
+                PasswordHash = u.PasswordHash,
+                RolId = u.RolId,
+                EstaActivo = u.EstaActivo,
+                Fotografia2 = u.Fotografia2,
+                Fotografia2Mime = u.Fotografia2Mime
+            };
+            _context.usuarios.Add(usuarioLocal);
+            await _context.SaveChangesAsync();
+        }
+        else
+        {
+            usuarioLocal = usuario;
+        }
+
 
         var token = _jwt.CreateToken(u);
-
         return Ok(new LoginResponse
         {
-            UsuarioId = u.UsuarioId,
-            Email = u.Email,
-            Telefono = u.Telefono,
-            Nickname = u.Nickname,
-            RolId = u.RolId,
-            EstaActivo = u.EstaActivo,
-            Token = token
+            UsuarioId = usuarioLocal.UsuarioId,
+            Email = usuarioLocal.email,
+            Telefono = usuarioLocal.Telefono,
+            Nickname = usuarioLocal.nickname,
+            RolId = usuarioLocal.RolId,
+            EstaActivo = true,
+            Token = token,
+            Fotografia2 = usuarioLocal.Fotografia2 != null ? $"data:{usuarioLocal.Fotografia2Mime};base64,{Convert.ToBase64String(usuarioLocal.Fotografia2)}" : null
         });
     }
 }
