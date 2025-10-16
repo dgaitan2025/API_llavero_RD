@@ -93,7 +93,8 @@ builder.Services.AddCors(options =>
                     "http://localhost:3000",
                     "https://llaverostec.onrender.com",
                     "http://localhost:5173",
-                    "https://localhost:5173"
+                    "https://localhost:5173",
+					"https://tecllaveros.onrender.com"
                 )
                 .AllowAnyHeader()
                 .AllowAnyMethod()
