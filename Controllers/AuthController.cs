@@ -110,11 +110,11 @@ public class AuthController : ControllerBase
     public async Task<IActionResult> LoginFace([FromBody] LoginFaceRequest form, [FromServices] FaceApiClient _face)
     {
         if (form is null || string.IsNullOrWhiteSpace(form.Identificador) || form.Foto is null || form.Foto.Length == 0)
-            return BadRequest("Debe enviar 'identificador' y una 'foto' válida.");
+            return BadRequest(new { success = false, message = "Debe enviar 'identificador' y una 'foto' válida." });
 
         var u = await _repo.ObtenerPorCredencialAsync(form.Identificador.Trim());
         if (u is null || !u.EstaActivo)
-            return Unauthorized(new { success = false, message = "No coincide rostro" });
+            return Unauthorized(new { success = false, message = "Usuario No existe" });
 
         // Leer la foto subida a byte[]
         
@@ -123,10 +123,10 @@ public class AuthController : ControllerBase
         // Obtener fotos registradas en BD
         var (fotos, codigo, mensaje) = await _repo.ObtenerFotosAsync(u.UsuarioId);
         if (codigo != 0)
-            return StatusCode(codigo, new { codigo, mensaje });
+            return StatusCode(codigo, new { success = false, message = mensaje });
 
         if (fotos is null || (fotos.Fotografia is null && fotos.Fotografia2 is null))
-            return Unauthorized("No hay fotos registradas para validar el rostro.");
+            return Unauthorized(new { success = false, message = "No hay fotos registradas para validar el rostro." });
 
 
 
@@ -136,7 +136,7 @@ public class AuthController : ControllerBase
 
 
         if (!match)
-            return Unauthorized("Rostro no reconocido o base64 invalido para su analisis.");
+            return Unauthorized(new { success = false, message = "Rostro no reconocido o base64 inválido para su análisis." });
 
 
         var usuario = await _context.usuarios.FirstOrDefaultAsync(x => x.email == u.Email || x.Telefono == u.Telefono);
@@ -165,16 +165,23 @@ public class AuthController : ControllerBase
 
 
         var token = _jwt.CreateToken(u);
-        return Ok(new LoginResponse
+        return Ok(new
         {
-            UsuarioId = usuarioLocal.UsuarioId,
-            Email = usuarioLocal.email,
-            Telefono = usuarioLocal.Telefono,
-            Nickname = usuarioLocal.nickname,
-            RolId = usuarioLocal.RolId,
-            EstaActivo = true,
-            Token = token,
-            Fotografia2 = usuarioLocal.Fotografia2 != null ? $"data:{usuarioLocal.Fotografia2Mime};base64,{Convert.ToBase64String(usuarioLocal.Fotografia2)}" : null
+            success = true,
+            message = "Inicio de sesión exitoso.",
+            usuario = new
+            {
+                usuarioLocal.UsuarioId,
+                usuarioLocal.email,
+                usuarioLocal.Telefono,
+                usuarioLocal.nickname,
+                usuarioLocal.RolId,
+                usuarioLocal.EstaActivo,
+                token,
+                Fotografia2 = usuarioLocal.Fotografia2 != null
+                ? $"data:{usuarioLocal.Fotografia2Mime};base64,{Convert.ToBase64String(usuarioLocal.Fotografia2)}"
+                : null
+            }
         });
     }
 }

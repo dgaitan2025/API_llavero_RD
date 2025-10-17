@@ -9,6 +9,7 @@ public partial class vw_ordenes_pendiente
     public int entrega_domicilio { get; set; }
 
     public int Id_Detalle { get; set; }
+    public int fase_actual { get; set; }
     public byte[]? Foto_Anverso { get; set; }
 
     public byte[]? Foto_Reverso { get; set; }
