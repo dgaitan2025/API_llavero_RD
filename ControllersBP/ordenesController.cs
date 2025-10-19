@@ -184,6 +184,54 @@ namespace ProyDesaWeb2025.ControllersBP
             }
         }
 
+        [HttpGet("GetordenesPendienteEntrega")]
+        public async Task<ActionResult<IEnumerable<OrdenPendienteEntregaDto>>> GetordenesPendinteEntegra()
+        {
+            try
+            {
+                // Reutilizamos el connection string de tu DbContext
+                string cs = _context.Database.GetDbConnection().ConnectionString;
+
+                using var cn = new MySqlConnection(cs);
+                await cn.OpenAsync();
+
+                var datos = await cn.QueryAsync<OrdenPendienteEntregaDto>(
+                    "sp_ordenes_pendiente_entrega",
+                    commandType: CommandType.StoredProcedure
+                );
+
+                return Ok(datos);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { mensaje = ex.Message });
+            }
+        }
+
+        [HttpGet("PendienteEntregaDomicilio")]
+        public async Task<ActionResult<IEnumerable<PendienteEntregaDomicilio>>> PendienteEntregaDomicilio()
+        {
+            try
+            {
+                // Reutilizamos el connection string de tu DbContext
+                string cs = _context.Database.GetDbConnection().ConnectionString;
+
+                using var cn = new MySqlConnection(cs);
+                await cn.OpenAsync();
+
+                var datos = await cn.QueryAsync<PendienteEntregaDomicilio>(
+                    "sp_ordenes_domicilio",
+                    commandType: CommandType.StoredProcedure
+                );
+
+                return Ok(datos);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { mensaje = ex.Message });
+            }
+        }
+
         // GET: api/ordenes/5
         [HttpGet("OrdenesDetails/{id}")]
         public async Task<ActionResult<ordene>> Getordene(int id)
@@ -328,5 +376,240 @@ namespace ProyDesaWeb2025.ControllersBP
                 .Where(d => d.UsuarioId == id)
                 .ToListAsync();
         }
+
+        [HttpPost("QA")]
+        public async Task<IActionResult> CrearFaseDetalle([FromBody] QA request)
+        {
+            try
+            {
+                // Reutiliza el connection string del DbContext
+                string cs = _context.Database.GetDbConnection().ConnectionString;
+
+                using var cn = new MySqlConnection(cs);
+                await cn.OpenAsync();
+
+                // Ejecuta el procedimiento almacenado con Dapper
+                await cn.ExecuteAsync(
+                    "SP_ordenesdetalle_fases_crear",
+                    new
+                    {
+                        p_id_detalle = request.IdDetalle,
+                        p_id_fase = request.IdFase,
+                        p_fecha_inicio = DateTime.Now,
+                        p_comentario = request.Comentario
+                    },
+                    commandType: CommandType.StoredProcedure
+                );
+
+                // 2️⃣ Obtiene los datos actualizados del detalle (igual que en ActualizarEstadoOrden)
+                var info = await cn.QueryFirstOrDefaultAsync<(int OrdenId, string FaseActual, int PasoActual, decimal Porcentaje)>(@"
+            SELECT
+                o.Id_Orden AS OrdenId,
+                f.Descripcion AS FaseActual,
+                faCurr.No_Paso AS PasoActual,
+                ROUND(faCurr.No_Paso * 100.0 /
+                    NULLIF((SELECT COUNT(*) FROM fases_articulos faTot
+                            WHERE faTot.Id_Articulo = od.Id_Articulo), 0), 2) AS Porcentaje
+            FROM ordenesdetalle_fases odf
+            INNER JOIN ordenes_detalle od ON od.Id_Detalle = odf.Id_Detalle
+            INNER JOIN ordenes o ON o.Id_Orden = od.Id_Orden
+            INNER JOIN fases f ON f.Id_Fase = odf.Id_Fase
+            INNER JOIN fases_articulos faCurr
+                    ON faCurr.Id_Fase = odf.Id_Fase
+                AND faCurr.Id_Articulo = od.Id_Articulo
+            WHERE odf.Id_Detalle = @Id_Detalle
+            ORDER BY odf.Fecha_Inicio DESC, odf.Id_Registro DESC
+            LIMIT 1;",
+                    new { Id_Detalle = request.IdDetalle }
+                );
+
+                if (info.Equals(default((int, string, int, decimal))))
+                {
+                    return Ok(new { mensaje = "Fase creada, pero no se encontró información para notificar." });
+                }
+
+                // 3️⃣ Crea payload real
+                var payload = new
+                {
+                    orden = info.OrdenId,
+                    estado = info.FaseActual,
+                    avance = info.Porcentaje,
+                    pasoActual = info.PasoActual
+                };
+
+                // 4️⃣ Envía por SignalR
+                await _hub.Clients.All.SendAsync("RecibirSaludo", payload);
+
+                return Ok(new
+                {
+                    mensaje = "Fase registrada correctamente.",
+                    data = payload
+                });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new
+                {
+                    success = false,
+                    message = "Error al crear la fase.",
+                    error = ex.Message
+                });
+            }
+        }
+
+        [HttpPost("Pagar_orden")]
+        public async Task<IActionResult> PagarOrden([FromBody] pagarOrden request)
+        {
+            try
+            {
+                if (request == null || request.p_Id_Orden <= 0)
+                {
+                    return BadRequest(new
+                    {
+                        success = false,
+                        message = "Id de orden inválido."
+                    });
+                }
+
+                // 🔹 Obtener cadena de conexión desde el contexto
+                string cs = _context.Database.GetDbConnection().ConnectionString;
+
+                using var cn = new MySqlConnection(cs);
+                await cn.OpenAsync();
+
+                // 🔹 Ejecutar el procedimiento y obtener el JSON de respuesta
+                var resultado = await cn.QueryFirstOrDefaultAsync<string>(
+                    "llaveros_pf.sp_actualizar_pago_orden",
+                    new { p_Id_Orden = request.p_Id_Orden },
+                    commandType: CommandType.StoredProcedure
+                );
+
+                if (string.IsNullOrEmpty(resultado))
+                {
+                    return NotFound(new
+                    {
+                        success = false,
+                        message = "El procedimiento no devolvió ningún resultado."
+                    });
+                }
+
+                // 🔹 Deserializar el JSON devuelto por MySQL
+                var json = System.Text.Json.JsonDocument.Parse(resultado);
+                bool success = json.RootElement.GetProperty("success").GetBoolean();
+                string message = json.RootElement.GetProperty("message").GetString();
+
+                // 🔹 Si fue exitoso, enviar también notificación por SignalR
+                if (success)
+                {
+                    var payload = new
+                    {
+                        orden = request.p_Id_Orden,
+                        estado = 1,
+                        avance = 100,
+                        pasoActual = 0
+                    };
+
+                    await _hub.Clients.All.SendAsync("RecibirSaludo", payload);
+
+                    return Ok(new
+                    {
+                        success,
+                        message,
+                        data = payload
+                    });
+                }
+                else
+                {
+                    return BadRequest(new
+                    {
+                        success,
+                        message
+                    });
+                }
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new
+                {
+                    success = false,
+                    message = "Error al procesar el pago.",
+                    error = ex.Message
+                });
+            }
+        }
+
+        [HttpPost("Registrar_entregaUsuario")]
+        public async Task<IActionResult> Registrar_entregaUsuario ([FromBody] usuarioEntrega request)
+        {
+            try
+            {
+                if (request == null || request.p_Id_Orden <= 0 || request.p_Id_usuario <= 0)
+                {
+                    return BadRequest(new
+                    {
+                        success = false,
+                        message = "Id de orden inválido."
+                    });
+                }
+
+                // 🔹 Obtener cadena de conexión desde el contexto
+                string cs = _context.Database.GetDbConnection().ConnectionString;
+
+                using var cn = new MySqlConnection(cs);
+                await cn.OpenAsync();
+
+                // 🔹 Ejecutar el procedimiento y obtener el JSON de respuesta
+                var resultado = await cn.QueryFirstOrDefaultAsync<string>(
+                    "llaveros_pf.sp_actualizar_UsuarioEntrega",
+                    new { p_Id_usuario = request.p_Id_usuario,  p_Id_Orden = request.p_Id_Orden  },
+                    commandType: CommandType.StoredProcedure
+                );
+
+                if (string.IsNullOrEmpty(resultado))
+                {
+                    return NotFound(new
+                    {
+                        success = false,
+                        message = "El procedimiento no devolvió ningún resultado."
+                    });
+                }
+
+                // 🔹 Deserializar el JSON devuelto por MySQL
+                var json = System.Text.Json.JsonDocument.Parse(resultado);
+                bool success = json.RootElement.GetProperty("success").GetBoolean();
+                string message = json.RootElement.GetProperty("message").GetString();
+
+                // 🔹 Si fue exitoso, enviar también notificación por SignalR
+                if (success)
+                {
+           
+                    return Ok(new
+                    {
+                        success,
+                        message,
+                        
+                    });
+                }
+                else
+                {
+                    return BadRequest(new
+                    {
+                        success,
+                        message
+                    });
+                }
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new
+                {
+                    success = false,
+                    message = "Error al procesar el pago.",
+                    error = ex.Message
+                });
+            }
+        }
+
+
     }
 }
