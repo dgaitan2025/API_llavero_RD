@@ -36,35 +36,42 @@ namespace ProyDesaWeb2025.Funciones
             string contentSid)
         {
             /* ─────────── Generar PDF ─────────── */
-            var rutaPlantilla = Path.Combine("Recursos", "IMGS", "Plantilla.png");
+            var rutaPlantilla = Path.Combine(
+                Directory.GetCurrentDirectory(),
+                "wwwroot", "recursos", "imgs", "Plantilla.png"
+            );
+
             var pdf = _carnetGen.GenerarCarnetConPlantilla(
                 nombre,
                 nickname,
                 rutaPlantilla
             );
 
-            // Guardar PDF en servidor
-            var rutaPdf = Path.Combine("Recursos", "PDFS");
+            /* ─────────── Guardar PDF en servidor ─────────── */
+            var rutaPdf = Path.Combine(
+                Directory.GetCurrentDirectory(),
+                "wwwroot", "recursos", "pdfs"
+            );
             Directory.CreateDirectory(rutaPdf);
 
             string fileName = $"{nickname}.pdf";
             string fullPath = Path.Combine(rutaPdf, fileName);
+
             await File.WriteAllBytesAsync(fullPath, pdf);
+
+            // URL pública del PDF (para correo o WhatsApp)
+            string pdfUrl = $"{_baseUrl}/recursos/pdfs/{fileName}";
 
             /* ─────────── Enviar correo ─────────── */
             await _emailService.EnviarCorreoConPDF(correo, nombre, pdf);
-            string pdfUrl = $"{_baseUrl}/Recursos/PDFS/{fileName}";
 
             /* ─────────── Enviar WhatsApp ─────────── */
             var vars = new Dictionary<string, string>
             {
-                ["1"] = nickname,   // {{1}}
-                ["2"] = pdfUrl// solo nombre, sin .pdf
+                ["1"] = nickname,
+                ["2"] = pdfUrl
             };
 
-            // Construir la URL pública
-
-            // Enviar WhatsApp
             _twilio.SendWhatsAppTemplate(
                 toE164: $"+502{telefono}",
                 contentSid: contentSid,

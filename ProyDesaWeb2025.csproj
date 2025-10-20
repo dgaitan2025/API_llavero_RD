@@ -31,4 +31,9 @@
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 		</Content>
 	</ItemGroup>
+
+	<ItemGroup>
+	  <Folder Include="wwwroot\recursos\imgs\" />
+	  <Folder Include="wwwroot\recursos\pdfs\" />
+	</ItemGroup>
 </Project>

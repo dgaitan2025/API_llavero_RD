@@ -91,14 +91,14 @@ builder.Services.AddCors(options =>
         {
             policy.WithOrigins(
                     "http://localhost:3000",
-                    "https://llaverostec.onrender.com",
                     "http://localhost:5173",
                     "https://localhost:5173",
+                    "https://llaverostec.onrender.com",
                     "https://tecllaveros.onrender.com"
-                )
-                .AllowAnyHeader()
-                .AllowAnyMethod()
-                .AllowCredentials(); // Necesario si pasas credenciales/token en websockets
+            )
+            .AllowAnyHeader()
+            .AllowAnyMethod()
+            .AllowCredentials();
         });
 });
 
@@ -108,19 +108,14 @@ var app = builder.Build();
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
-    app.UseSwaggerUI();
-    app.UseHttpsRedirection();
+    app.UseSwaggerUI();    
 }
 
-// Servir archivos estáticos desde "Recursos" en la raíz del proyecto
-app.UseStaticFiles(new StaticFileOptions
-{
-    FileProvider = new PhysicalFileProvider(
-        Path.Combine(builder.Environment.ContentRootPath, "Recursos")),
-    RequestPath = "/Recursos"
-});
-
 app.UseHttpsRedirection();
+
+// Archivos estáticos desde **wwwroot/**
+app.UseStaticFiles();
+
 
 // Usar CORS
 app.UseCors("AllowVueClient");
@@ -136,5 +131,18 @@ app.MapHub<OrdenesHub>("/hubs/ordenes");
 
 app.MapControllers();
 // =====================================================
+
+// ======== Asegurar estructura wwwroot ========
+var rutasNecesarias = new[]
+{
+    Path.Combine(app.Environment.WebRootPath, "recursos", "imgs"),
+    Path.Combine(app.Environment.WebRootPath, "recursos", "pdfs")
+};
+
+foreach (var ruta in rutasNecesarias)
+{
+    if (!Directory.Exists(ruta))
+        Directory.CreateDirectory(ruta);
+}
 
 app.Run();
