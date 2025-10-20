@@ -49,10 +49,11 @@ namespace ProyDesaWeb2025.Funciones
 
             /* ─────────── Guardar PDF en servidor ─────────── */
             var rutaPdf = Path.Combine(
-                Directory.GetCurrentDirectory(),
-                "Recursos", "PDFS"
-            );
-            Directory.CreateDirectory(rutaPdf);
+				app.Environment.WebRootPath,
+				"recursos", "pdfs"
+			);
+			Directory.CreateDirectory(rutaPdf);
+            
 
             string fileName = $"{nickname}.pdf";
             string fullPath = Path.Combine(rutaPdf, fileName);
