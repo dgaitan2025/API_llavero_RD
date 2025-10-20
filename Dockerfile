@@ -32,6 +32,7 @@ RUN apt-get update && apt-get install -y \
     && fc-cache -fv
 
 COPY --from=build /app/out .
+COPY --from=build /app/Recursos ./Recursos
 
 # Exponer puerto (Render usa el PORT de env variable)
 EXPOSE 8080
