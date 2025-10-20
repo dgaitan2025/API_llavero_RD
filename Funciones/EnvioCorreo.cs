@@ -1,32 +1,56 @@
-﻿using MailKit.Security;
-using MimeKit;
-using MailKit.Net.Smtp;
+﻿using SendGrid;
+using SendGrid.Helpers.Mail;
+using System;
+using System.Threading.Tasks;
 
 namespace ProyDesaWeb2025.Funciones
 {
     public class EnvioCorreo
     {
+        private readonly string _apiKey;
+        private readonly string _fromEmail;
+        private readonly string _fromName;
+
+        public EnvioCorreo()
+        {
+            // Las variables se configuran en Render (Environment Variables)
+            _apiKey = Environment.GetEnvironmentVariable("SENDGRID_API_KEY") ?? "";
+            _fromEmail = Environment.GetEnvironmentVariable("SENDGRID_FROM_EMAIL") ?? "rdra20.ies@gmail.com";
+            _fromName = Environment.GetEnvironmentVariable("SENDGRID_FROM_NAME") ?? "Sistema TeckeyGT";
+        }
+
         public async Task EnviarCorreoConPDF(string correoDestino, string nombreUsuario, byte[] pdf)
         {
-            var message = new MimeMessage();
-            message.From.Add(new MailboxAddress("Sistema", "rdra20.ies@gmail.com")); // Cambiar
-            message.To.Add(new MailboxAddress(nombreUsuario, correoDestino));
-            message.Subject = "Carnet de Registro";
-
-            var builder = new BodyBuilder
+            try
             {
-                TextBody = $"Hola {nombreUsuario}, gracias por registrarte. En el archivo adjunto encontrarás tu carnet digital.",
-            };
+                var client = new SendGridClient(_apiKey);
+                var from = new EmailAddress(_fromEmail, _fromName);
+                var to = new EmailAddress(correoDestino, nombreUsuario);
+                var subject = "Carnet de Registro - TeckeyGT";
 
-            builder.Attachments.Add("CarnetUsuario.pdf", pdf, new ContentType("application", "pdf"));
-            message.Body = builder.ToMessageBody();
+                var plainTextContent = $"Hola {nombreUsuario}, gracias por registrarte. En el archivo adjunto encontrarás tu carnet digital.";
+                var htmlContent = $"<p>Hola <strong>{nombreUsuario}</strong>, gracias por registrarte.</p>" +
+                                  $"<p>En el archivo adjunto encontrarás tu carnet digital.</p>";
 
-            using (var client = new SmtpClient())
+                var msg = MailHelper.CreateSingleEmail(from, to, subject, plainTextContent, htmlContent);
+
+                // Adjuntar el PDF
+                msg.AddAttachment("CarnetUsuario.pdf", Convert.ToBase64String(pdf), "application/pdf");
+
+                var response = await client.SendEmailAsync(msg);
+
+                Console.WriteLine($"📧 SendGrid status: {response.StatusCode}");
+
+                if ((int)response.StatusCode >= 400)
+                {
+                    var body = await response.Body.ReadAsStringAsync();
+                    Console.WriteLine($"⚠️ Error SendGrid: {body}");
+                }
+            }
+            catch (Exception ex)
             {
-                await client.ConnectAsync("smtp.gmail.com", 587, SecureSocketOptions.StartTls);
-                await client.AuthenticateAsync("rdra20.ies@gmail.com", "sjammhmtreziblfp");
-                await client.SendAsync(message);
-                await client.DisconnectAsync(true);
+                Console.WriteLine($"❌ Error al enviar correo: {ex.Message}");
+                throw;
             }
         }
     }
