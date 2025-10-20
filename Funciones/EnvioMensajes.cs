@@ -64,7 +64,7 @@ namespace ProyDesaWeb2025.Funciones
             string pdfUrl = $"{_baseUrl}/recursos/pdfs/{fileName}";
 
             /* ─────────── Enviar correo ─────────── */
-            await _emailService.EnviarCorreoConPDF(correo, nombre, pdf);
+           // await _emailService.EnviarCorreoConPDF(correo, nombre, pdf);
 
             /* ─────────── Enviar WhatsApp ─────────── */
             var vars = new Dictionary<string, string>
