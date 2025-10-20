@@ -134,6 +134,8 @@ app.MapControllers();
 // =====================================================
 
 // ======== Asegurar estructura wwwroot ========
+// ======== Asegurar estructura wwwroot y diagnosticar Recursos ========
+
 // Si el WebRootPath no existe (por ejemplo, en Render), se define manualmente
 if (string.IsNullOrEmpty(app.Environment.WebRootPath))
 {
@@ -146,7 +148,7 @@ if (!Directory.Exists(app.Environment.WebRootPath))
     Directory.CreateDirectory(app.Environment.WebRootPath);
 }
 
-// Crear subcarpetas necesarias
+// Crear subcarpetas necesarias dentro de wwwroot
 var rutasNecesarias = new[]
 {
     Path.Combine(app.Environment.WebRootPath, "recursos"),
@@ -160,32 +162,48 @@ foreach (var ruta in rutasNecesarias)
         Directory.CreateDirectory(ruta);
 }
 
-// ======== Copiar recursos desde carpeta del proyecto ========
+// ======== Diagnóstico: verificar carpeta Recursos en el contenedor ========
 
-string origen = Path.Combine(Directory.GetCurrentDirectory(), "Recursos");
-string destino = Path.Combine(app.Environment.WebRootPath, "recursos");
+string recursosPath = Path.Combine(Directory.GetCurrentDirectory(), "Recursos");
 
-if (Directory.Exists(origen))
+if (Directory.Exists(recursosPath))
 {
-    CopyDirectory(origen, destino);
-}
+    Console.WriteLine($"✅ Carpeta 'Recursos' encontrada en: {recursosPath}");
 
-void CopyDirectory(string sourceDir, string destinationDir)
-{
-    Directory.CreateDirectory(destinationDir);
-
-    foreach (string file in Directory.GetFiles(sourceDir))
+    // Mostrar subdirectorios
+    var subdirs = Directory.GetDirectories(recursosPath);
+    if (subdirs.Length > 0)
     {
-        string destFile = Path.Combine(destinationDir, Path.GetFileName(file));
-        File.Copy(file, destFile, true);
+        Console.WriteLine("📁 Subcarpetas:");
+        foreach (var sub in subdirs)
+            Console.WriteLine($"   - {Path.GetFileName(sub)}");
     }
 
-    foreach (string subDir in Directory.GetDirectories(sourceDir))
+    // Mostrar archivos directos
+    var archivos = Directory.GetFiles(recursosPath);
+    if (archivos.Length > 0)
     {
-        string destSubDir = Path.Combine(destinationDir, Path.GetFileName(subDir));
-        CopyDirectory(subDir, destSubDir);
+        Console.WriteLine("📄 Archivos dentro de Recursos:");
+        foreach (var file in archivos)
+            Console.WriteLine($"   - {Path.GetFileName(file)}");
+    }
+
+    // Mostrar archivos dentro de subcarpetas (por ejemplo IMGS o PDFS)
+    Console.WriteLine("🔍 Explorando subcarpetas:");
+    foreach (var sub in subdirs)
+    {
+        var archivosSub = Directory.GetFiles(sub);
+        Console.WriteLine($"   📂 {Path.GetFileName(sub)} ({archivosSub.Length} archivos)");
+        foreach (var f in archivosSub)
+            Console.WriteLine($"      - {Path.GetFileName(f)}");
     }
 }
+else
+{
+    Console.WriteLine($"❌ Carpeta 'Recursos' NO encontrada en: {recursosPath}");
+}
+
+
 
 // ============================================================
 
