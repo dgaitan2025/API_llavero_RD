@@ -94,7 +94,8 @@ builder.Services.AddCors(options =>
                     "http://localhost:5173",
                     "https://localhost:5173",
                     "https://llaverostec.onrender.com",
-                    "https://tecllaveros.onrender.com"
+                    "https://tecllaveros.onrender.com",
+					"https://www.teckeygt.com"
             )
             .AllowAnyHeader()
             .AllowAnyMethod()
@@ -158,5 +159,34 @@ foreach (var ruta in rutasNecesarias)
     if (!Directory.Exists(ruta))
         Directory.CreateDirectory(ruta);
 }
+
+// ======== Copiar recursos desde carpeta del proyecto ========
+
+string origen = Path.Combine(Directory.GetCurrentDirectory(), "Recursos");
+string destino = Path.Combine(app.Environment.WebRootPath, "recursos");
+
+if (Directory.Exists(origen))
+{
+    CopyDirectory(origen, destino);
+}
+
+void CopyDirectory(string sourceDir, string destinationDir)
+{
+    Directory.CreateDirectory(destinationDir);
+
+    foreach (string file in Directory.GetFiles(sourceDir))
+    {
+        string destFile = Path.Combine(destinationDir, Path.GetFileName(file));
+        File.Copy(file, destFile, true);
+    }
+
+    foreach (string subDir in Directory.GetDirectories(sourceDir))
+    {
+        string destSubDir = Path.Combine(destinationDir, Path.GetFileName(subDir));
+        CopyDirectory(subDir, destSubDir);
+    }
+}
+
+// ============================================================
 
 app.Run();
