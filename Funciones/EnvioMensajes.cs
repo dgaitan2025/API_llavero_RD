@@ -37,9 +37,9 @@ namespace ProyDesaWeb2025.Funciones
         {
             /* ─────────── Generar PDF ─────────── */
             var rutaPlantilla = Path.Combine(
-                Directory.GetCurrentDirectory(),
-                "wwwroot", "recursos", "imgs", "Plantilla.png"
-            );
+				Directory.GetCurrentDirectory(),
+				"Recursos", "IMGS", "Plantilla.png"
+			);
 
             var pdf = _carnetGen.GenerarCarnetConPlantilla(
                 nombre,
@@ -50,7 +50,7 @@ namespace ProyDesaWeb2025.Funciones
             /* ─────────── Guardar PDF en servidor ─────────── */
             var rutaPdf = Path.Combine(
                 Directory.GetCurrentDirectory(),
-                "wwwroot", "recursos", "pdfs"
+                "Recursos", "PDFS"
             );
             Directory.CreateDirectory(rutaPdf);
 
