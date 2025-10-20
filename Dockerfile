@@ -34,6 +34,13 @@ RUN apt-get update && apt-get install -y \
 COPY --from=build /app/out .
 COPY --from=build /app/Recursos ./Recursos
 
+# Crear las carpetas necesarias dentro del contenedor
+RUN mkdir -p /app/wwwroot/recursos/imgs && \
+    mkdir -p /app/wwwroot/recursos/pdfs
+
+# Permisos adecuados (opcional pero recomendable)
+RUN chmod -R 777 /app/wwwroot
+
 # Exponer puerto (Render usa el PORT de env variable)
 EXPOSE 8080
 ENV ASPNETCORE_URLS=http://+:8080
