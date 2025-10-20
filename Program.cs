@@ -133,8 +133,22 @@ app.MapControllers();
 // =====================================================
 
 // ======== Asegurar estructura wwwroot ========
+// Si el WebRootPath no existe (por ejemplo, en Render), se define manualmente
+if (string.IsNullOrEmpty(app.Environment.WebRootPath))
+{
+    app.Environment.WebRootPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot");
+}
+
+// Crear carpeta wwwroot si no existe
+if (!Directory.Exists(app.Environment.WebRootPath))
+{
+    Directory.CreateDirectory(app.Environment.WebRootPath);
+}
+
+// Crear subcarpetas necesarias
 var rutasNecesarias = new[]
 {
+    Path.Combine(app.Environment.WebRootPath, "recursos"),
     Path.Combine(app.Environment.WebRootPath, "recursos", "imgs"),
     Path.Combine(app.Environment.WebRootPath, "recursos", "pdfs")
 };
