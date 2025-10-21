@@ -10,9 +10,9 @@ namespace ProyDesaWeb2025.Funciones
         private readonly HttpClient _http;
         private readonly string _baseUrl;
 
-        public FaceApiClient(HttpClient http, IConfiguration cfg)
+        public FaceApiClient(HttpClient https, IConfiguration cfg)
         {
-            _http = http;
+            _http = https;
             _baseUrl = cfg["FaceApi:BaseUrl"] ?? "https://www.server.daossystem.pro";
         }
 
@@ -40,7 +40,7 @@ namespace ProyDesaWeb2025.Funciones
                 "application/json"
             );
 
-            var response = await _http.PostAsync($"{_baseUrl}/Rostro/Verificar", content);
+            var response = await _http.PostAsync($"{_baseUrl}/api/Rostro/Verificar", content);
             if (!response.IsSuccessStatusCode)
                 return false;
 
