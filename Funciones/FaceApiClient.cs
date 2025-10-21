@@ -13,7 +13,7 @@ namespace ProyDesaWeb2025.Funciones
         public FaceApiClient(HttpClient http, IConfiguration cfg)
         {
             _http = http;
-            _baseUrl = cfg["FaceApi:BaseUrl"] ?? "https://www.server.daossystem.pro:3405";
+            _baseUrl = cfg["FaceApi:BaseUrl"] ?? "https://www.server.daossystem.pro";
         }
 
         /// <summary>
