@@ -10,10 +10,10 @@ namespace ProyDesaWeb2025.Funciones
         private readonly HttpClient _http;
         private readonly string _baseUrl;
 
-        public FaceApiClient(HttpClient https, IConfiguration cfg)
+        public FaceApiClient(HttpClient http, IConfiguration cfg)
         {
-            _http = https;
-            _baseUrl = cfg["FaceApi:BaseUrl"] ?? "https://www.server.daossystem.pro";
+            _http = http;
+            _baseUrl = cfg["FaceApi:BaseUrl"] ?? "https://www.daossystem.pro";
         }
 
         /// <summary>
