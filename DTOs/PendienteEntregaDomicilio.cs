@@ -10,5 +10,9 @@
         public int Tipo_pago { get; set; }
         public int Id_detalle { get; set; }
         public int Pago_realizado { get; set; }
+
+        public string? Direccion_entrega { get; set; }
+        public string? Persona_Entregar { get; set; }
+        public string? Telefono { get; set; }
     }
 }
