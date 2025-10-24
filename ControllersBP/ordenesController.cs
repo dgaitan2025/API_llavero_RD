@@ -232,6 +232,74 @@ namespace ProyDesaWeb2025.ControllersBP
             }
         }
 
+        [HttpGet("OrdenesPorRepartidor/{idRepartidor}")]
+        public async Task<ActionResult<IEnumerable<PendienteEntregaDomicilio>>> OrdenesPorRepartidor(int idRepartidor)
+        {
+            try
+            {
+                // 🔹 Recuperamos el connection string desde el DbContext
+                string cs = _context.Database.GetDbConnection().ConnectionString;
+
+                using var cn = new MySqlConnection(cs);
+                await cn.OpenAsync();
+
+                // 🔹 Llamamos al SP con el parámetro del repartidor
+                var datos = await cn.QueryAsync<PendienteEntregaDomicilio>(
+                    "sp_orden_asignada_repartidor",
+                    new { p_IdRepartidor = idRepartidor },
+                    commandType: CommandType.StoredProcedure
+                );
+
+                // 🔹 Validamos si hay datos
+                if (datos == null || !datos.Any())
+                    return NotFound(new { mensaje = "No hay órdenes asignadas para este repartidor." });
+
+                // 🔹 Retornamos los resultados
+                return Ok(datos);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { mensaje = ex.Message });
+            }
+        }
+
+
+        [HttpGet("PendienteAsignarRepartidor")]
+        public async Task<IActionResult> PendienteAsignarRepartidor()
+        {
+            try
+            {
+                string cs = _context.Database.GetDbConnection().ConnectionString;
+
+                using var cn = new MySqlConnection(cs);
+                await cn.OpenAsync();
+
+                // Usamos QueryMultipleAsync porque el SP devuelve 2 resultados
+                using var multi = await cn.QueryMultipleAsync(
+                    "sp_ordenes_domicilio",
+                    commandType: CommandType.StoredProcedure
+                );
+
+                // 🔹 Primer resultado → Órdenes pendientes
+                var ordenes = await multi.ReadAsync<PendienteEntregaDomicilio>();
+
+                // 🔹 Segundo resultado → Usuarios con RolId = 3
+                var usuarios = await multi.ReadAsync<UsuarioRepartidor>();
+
+                // 🔹 Retornamos ambos resultados en un solo objeto
+                return Ok(new
+                {
+                    Ordenes = ordenes,
+                    Usuarios = usuarios
+                });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { mensaje = ex.Message });
+            }
+        }
+
+
         // GET: api/ordenes/5
         [HttpGet("OrdenesDetails/{id}")]
         public async Task<ActionResult<ordene>> Getordene(int id)

@@ -14,5 +14,6 @@
         public string? Direccion_entrega { get; set; }
         public string? Persona_Entregar { get; set; }
         public string? Telefono { get; set; }
+        public int? UsuarioRepartidor { get; set; }
     }
 }
