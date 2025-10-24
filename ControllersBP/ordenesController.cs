@@ -184,6 +184,31 @@ namespace ProyDesaWeb2025.ControllersBP
             }
         }
 
+        [HttpGet("GetordenesUsuarios")]
+        public async Task<ActionResult<IEnumerable<OrdenUsuarioDto>>> GetordenesUsuarios()
+        {
+            try
+            {
+                // Reutilizamos el connection string de tu DbContext
+                string cs = _context.Database.GetDbConnection().ConnectionString;
+
+                using var cn = new MySqlConnection(cs);
+                await cn.OpenAsync();
+
+                var datos = await cn.QueryAsync<OrdenUsuarioDto>(
+                    "sp_ordenes_flujo_usuarios",
+                    
+                    commandType: CommandType.StoredProcedure
+                );
+
+                return Ok(datos);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { mensaje = ex.Message });
+            }
+        }
+
         [HttpGet("GetordenesPendienteEntrega")]
         public async Task<ActionResult<IEnumerable<OrdenPendienteEntregaDto>>> GetordenesPendinteEntegra()
         {

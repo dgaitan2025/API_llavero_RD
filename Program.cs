@@ -96,7 +96,8 @@ builder.Services.AddCors(options =>
                     "https://llaverostec.onrender.com",
                     "https://tecllaveros.onrender.com",
 					"https://www.teckeygt.com",
-                    "https://teckeygt.com"
+                    "https://teckeygt.com",
+                    "https://pruebasllaveros.onrender.com"
             )
             .AllowAnyHeader()
             .AllowAnyMethod()
