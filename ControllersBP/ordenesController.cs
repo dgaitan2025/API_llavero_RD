@@ -78,7 +78,7 @@ namespace ProyDesaWeb2025.ControllersBP
 
                 // 1) Avanza la fase
                 await conn.ExecuteAsync(
-                    "llaveros_pf.SP_Avanzar_Fase",
+                    "SP_Avanzar_Fase",
                     new { Id_Registro = idRegistro },
                     commandType: CommandType.StoredProcedure
                 );
