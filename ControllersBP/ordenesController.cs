@@ -572,7 +572,7 @@ namespace ProyDesaWeb2025.ControllersBP
 
                 // 🔹 Ejecutar el procedimiento y obtener el JSON de respuesta
                 var resultado = await cn.QueryFirstOrDefaultAsync<string>(
-                    "llaveros_pf.sp_actualizar_pago_orden",
+                    "sp_actualizar_pago_orden",
                     new { p_Id_Orden = request.p_Id_Orden },
                     commandType: CommandType.StoredProcedure
                 );
@@ -653,7 +653,7 @@ namespace ProyDesaWeb2025.ControllersBP
 
                 // 🔹 Ejecutar el procedimiento y obtener el JSON de respuesta
                 var resultado = await cn.QueryFirstOrDefaultAsync<string>(
-                    "llaveros_pf.sp_actualizar_UsuarioEntrega",
+                    "sp_actualizar_UsuarioEntrega",
                     new { p_Id_usuario = request.p_Id_usuario,  p_Id_Orden = request.p_Id_Orden  },
                     commandType: CommandType.StoredProcedure
                 );

@@ -21,4 +21,7 @@ public partial class vw_ordenes_pendiente
     public string? Nombre { get; set; }
 
     public long? Telefono { get; set; }
+
+    public int Fill1 { get; set; }
+    public int Fill2 { get; set; }
 }
